@@ -21,14 +21,6 @@ var cameras = [];
 function initialize () {
   video = window.document.querySelector('video');
   recordButton = window.document.querySelector('record');
-  let permissionsGranted = true;
-  if (isMac) {
-    permissionsGranted = await systemPreferences.askForMediaAccess("microphone");
-  }
-
-  if (!permissionsGranted) {
-    alert("Access to camera denied")
-  }
   
   navigator.mediaDevices.enumerateDevices()
     .then(function(devices) {
