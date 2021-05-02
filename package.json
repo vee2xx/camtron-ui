@@ -12,7 +12,6 @@
     "electron": "^2.0.18"
   },
   "dependencies": {
-    "electron": "^2.0.18",
     "websocket-stream": "^3.3.3"
   }
 }
