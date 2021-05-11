@@ -5,6 +5,7 @@ const menu = electron.remote.Menu;
 const fs = require('fs');
 const websocket = require('websocket-stream')
 const isMac = process.platform === 'darwin'
+const bootstrap = require('bootstrap')
 
 let photoData;
 let video;
@@ -17,16 +18,30 @@ let mediaRecorder;
 const recordedChunks = [];
 
 var cameras = [];
+var videoContainer = 'webm'
+var videoCodecs = 'vp9'
+var currentCameraDeviceId;
+var webcamSelect;
+
 
 function initialize () {
   video = window.document.querySelector('video');
-  recordButton = window.document.querySelector('record');
-  
+  recordButton = window.document.querySelector('#takePhoto')
+  webcamSelect = window.document.querySelector('#webcams')
+
   navigator.mediaDevices.enumerateDevices()
     .then(function(devices) {
       cameras = devices.filter(device => device.kind == 'videoinput')
       if (cameras.length > 0) {
-        connectToCamera(cameras[0].deviceId);
+        //Create and append the options
+        for (var i = 0; i < cameras.length; i++) {
+            var option = document.createElement("option");
+            option.value = cameras[i].deviceId;
+            option.text = cameras[i].label;
+            webcamSelect.appendChild(option);
+        }
+      } else {
+        alert("No webcam found. Check to make sure one is connected.")
       }
       addMenu();
     })
@@ -49,13 +64,12 @@ function addMenu() {
     var camMenuItems = []
     cameras.forEach(function(cam) {
       camMenuItems.push({label: cam.label,
-        click() { 
-          connectToCamera(cam.deviceId) 
+        click() {  
+          currentCameraDeviceId = cam.deviceId;
+          connectToCamera();
         } 
       })
     });
-    
-    viewSubMenu.push({label: 'Available webcanms', submenu: camMenuItems})
   }
 
   var viewMenu ={label: 'View', submenu: viewSubMenu}
@@ -66,19 +80,28 @@ function addMenu() {
   menu.setApplicationMenu(camMenu); 
 }
 
-function connectToCamera(cameraId) {
+function connectToCamera() {
   let errorCallback = (error) => {
     alert("Error accessing camera. Check to see if it is connected and access permissions have been granted")
   };
-  window.navigator.webkitGetUserMedia({video: true, deviceId: { exact: cameraId }}, (localMediaStream) => {
+
+  if (mediaRecorder != null && mediaRecorder.state == 'recording') {
+    mediaRecorder.stop();
+  }
+  var deviceId = webcamSelect.value;
+  window.document.querySelector('.card').style.display = "none";
+  window.navigator.webkitGetUserMedia({video: true, deviceId: { exact: currentCameraDeviceId }}, (localMediaStream) => {
     log("INFO", "Connecting to webcam...")
     video.src = window.URL.createObjectURL(localMediaStream);
-    const options = { mimeType: 'video/webm; codecs=vp9' };
+    var videoMimeType = `video/${videoContainer}; codecs=${videoCodecs}`
+    console.log(videoMimeType)
+    const options = { mimeType: videoMimeType };
     mediaRecorder = new MediaRecorder(localMediaStream, options);
-
     mediaRecorder.ondataavailable = handleDataAvailable;
     mediaRecorder.onstop = handleStop;
     mediaRecorder.onerror = handleError;
+
+    initializeStream({"Container" : videoContainer, "Codec": videoCodecs})
 
     wsopen();
   }, errorCallback);
@@ -157,7 +180,7 @@ function handleError(e) {
 }
 
 async function handleStop(e) {
-  fetch("http://localhost:8080/stop");
+  fetch("http://localhost:8080/endStreaming");
 }
 
 async function log(logLevel, message) {
@@ -171,6 +194,19 @@ async function log(logLevel, message) {
   }
   catch(err) {
     alert("Unable to connect to server. " + err)
+  }
+}
+
+function initializeStream(videoMetadata) {
+  console.log("Sending init")
+  try {
+    fetch("http://localhost:8080/initializeStream", {
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(videoMetadata),
+      "method": "POST"
+    });
+  }
+  catch(err) {
   }
 }
 

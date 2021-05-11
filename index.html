@@ -1,18 +1,32 @@
 <html>
   <head>
     <title>Camera Golang Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
     <link href="app.css" rel="stylesheet" />
     <script src="app.js"></script>
-    <script>
-      // setInterval(function(){ takePhotoAndSend(); }, 30000);
+    <script> 
+      //setInterval(function(){ takePhotoAndSend(); }, 30000);
       //setInterval(function(){ takePhotoAndSend(); }, 1000);
     </script>
   </head>
   <body>
-    <canvas width="800" height="600"></canvas>
-    <video autoplay></video>
-    <div id="takePhoto" onclick="takePhotoAndSend()">
-      <i class="fa fa-camera" aria-hidden="true"></i>
+    <div>
+      <canvas width="800" height="600"></canvas>
+      <video autoplay></video>
+      <div id="takePhoto" onclick="takePhotoAndSend()">
+        <i class="fa fa-camera" aria-hidden="true"></i>
+      </div>
+    </div>
+    <div class="card text-dark bg-info mb-3 position-absolute top-50 start-50 translate-middle" style="z-index: 1;">
+      <div class="card-body">
+        <h5 class="card-title">Select a webcam</h5>
+        <div style="padding-bottom: 1rem;">
+          <select id="webcams" class="form-select bg-secondary" aria-label="Select a webcam">
+          </select>
+        </div>
+        <a href="#" class="btn btn-primary" onClick="connectToCamera()">OK</a>
+      </div>
     </div>
   </body>
 </html>
