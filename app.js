@@ -83,9 +83,7 @@ function connectToCamera() {
     mediaRecorder.ondataavailable = handleDataAvailable;
     mediaRecorder.onstop = handleStop;
     mediaRecorder.onerror = handleError;
-
-    initializeStream({"Container" : videoContainer, "Codec": videoCodecs})
-
+    
     wsopen();
   }, errorCallback);
 }
@@ -177,18 +175,6 @@ async function log(logLevel, message) {
   }
   catch(err) {
     alert("Unable to connect to server. " + err)
-  }
-}
-
-function initializeStream(videoMetadata) {
-  try {
-    fetch("http://localhost:8080/initializeStream", {
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(videoMetadata),
-      "method": "POST"
-    });
-  }
-  catch(err) {
   }
 }
 
