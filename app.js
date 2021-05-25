@@ -8,7 +8,6 @@ const isMac = process.platform === 'darwin'
 
 let photoData;
 let video;
-let recordButton;
 var webcamSelect;
 var ws = null;
 var connected = false;
@@ -17,25 +16,29 @@ let mediaRecorder;
 
 var cameras = [];
 
-var videoContainer = 'webm'
-var videoCodecs = 'vp9'
-
 function initialize () {
   addMenu();
   video = window.document.querySelector('video');
-  recordButton = window.document.querySelector('record');
   webcamSelect = window.document.querySelector('#webcams');
 
   navigator.mediaDevices.enumerateDevices()
     .then(function(devices) {
       cameras = devices.filter(device => device.kind == 'videoinput')
       if (cameras.length > 0) {
-        for (var i = 0; i < cameras.length; i++) {
-          var option = document.createElement("option");
-          option.value = cameras[i].deviceId;
-          option.text = cameras[i].label;
-          webcamSelect.appendChild(option);
+        if (cameras.length == 1) {
+          connectToCamera(cameras[0].deviceId) 
+        } else {
+          for (var i = 0; i < cameras.length; i++) {
+            var option = document.createElement("option");
+            option.value = cameras[i].deviceId;
+            option.text = cameras[i].label;
+            webcamSelect.appendChild(option);
+          }
         }
+
+      } else {
+        window.document.querySelector('.card').style.display = "none";
+        alert("Could not find a camera. Check to see if one is connected and access permissions have been granted")
       }
     })
     .catch(function(err) {
@@ -63,7 +66,8 @@ function addMenu() {
   menu.setApplicationMenu(camMenu); 
 }
 
-function connectToCamera() {
+function connectToCamera(deviceId) {
+  window.document.querySelector('.card').style.display = "none";
   let errorCallback = (error) => {
     alert("Error accessing camera. Check to see if it is connected and access permissions have been granted")
   };
@@ -71,8 +75,6 @@ function connectToCamera() {
   if (mediaRecorder != null && mediaRecorder.state == 'recording') {
     mediaRecorder.stop();
   }
-  var deviceId = webcamSelect.value;
-  window.document.querySelector('.card').style.display = "none";
 
   window.navigator.webkitGetUserMedia({video: true, deviceId: { exact: deviceId }}, (localMediaStream) => {
     log("INFO", "Connecting to webcam...")
