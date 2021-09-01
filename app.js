@@ -11,8 +11,10 @@ let video;
 var webcamSelect;
 var ws = null;
 var connected = false;
+var currentDeviceId;
 
 let mediaRecorder; 
+let camStream;
 
 var cameras = [];
 
@@ -20,11 +22,11 @@ function initialize () {
   addMenu();
   video = window.document.querySelector('video');
   webcamSelect = window.document.querySelector('#webcams');
-
+  wsopen();
   navigator.mediaDevices.enumerateDevices()
     .then(function(devices) {
       cameras = devices.filter(device => device.kind == 'videoinput')
-      if (cameras.length > 0) {
+      if (cameras.length > 0) { 
         if (cameras.length == 1) {
           connectToCamera(cameras[0].deviceId) 
         } else {
@@ -67,6 +69,7 @@ function addMenu() {
 }
 
 function connectToCamera(deviceId) {
+  currentDeviceId = deviceId;
   window.document.querySelector('.card').style.display = "none";
   let errorCallback = (error) => {
     alert("Error accessing camera. Check to see if it is connected and access permissions have been granted")
@@ -79,16 +82,20 @@ function connectToCamera(deviceId) {
   window.navigator.webkitGetUserMedia({video: true, deviceId: { exact: deviceId }}, (localMediaStream) => {
     log("INFO", "Connecting to webcam...")
     video.src = window.URL.createObjectURL(localMediaStream);
+    camStream = localMediaStream;
     const options = { mimeType: 'video/webm; codecs=vp9' };
     mediaRecorder = new MediaRecorder(localMediaStream, options);
 
     mediaRecorder.ondataavailable = handleDataAvailable;
     mediaRecorder.onstop = handleStop;
     mediaRecorder.onerror = handleError;
+
+
+    mediaRecorder.start(100);
     
-    wsopen();
   }, errorCallback);
 }
+
 
 function shutdown() {
   mediaRecorder.stop()
@@ -105,7 +112,6 @@ function wsopen() {
 
 var onOpen = function(event) {
   connected = true;
-  mediaRecorder.start(100);
 }
 
 var onClose = function(event) {
@@ -113,7 +119,25 @@ var onClose = function(event) {
 }
 
 var onMessage = function(event) {
-  var data = event.data;
+  var message = event.data;
+  console.log("got messge " + message)
+  switch (message) {
+    case "recorder.stop":
+      console.log("stopping after message")
+      if (mediaRecorder != null && mediaRecorder.state == 'recording') {
+        mediaRecorder.requestData();
+        mediaRecorder.stop();
+      }
+      break;
+    case "recorder.start":
+      console.log("starting after message")
+      if (mediaRecorder != null && mediaRecorder.state != 'recording') {
+        mediaRecorder.start(100);
+      }
+      break;
+    default:
+      //do nothing
+  }
 };
 
 var onError = function(event) {
@@ -163,7 +187,7 @@ function handleError(e) {
 }
 
 function handleStop(e) {
-  fetch("http://localhost:8080/endStreaming");
+  //Do we need to do anything here?
 }
 
 async function log(logLevel, message) {
